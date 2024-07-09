@@ -7,9 +7,13 @@
     <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
 </head>
 <body>
-    <h2>Count of rows: <span class="rowcount"></span></h2>
-    <div id="my_dataviz"></div>
-
+    <h2>Average Product Price Per Home State</h2>
+    <h3>Count of rows: <span class="rowcount"></span></h2>
+    <div id="bargraph"></div>
+    <h2>Total Spend 2018-2022 by Reported Alcohol Use</h2>
+    <div id="boxplots_alcohol"></div>
+    <h2>Total Spend 2018-2022 by Reported Marijuana Use</h2>
+    <div id="boxplots_marijuana"></div>
     <script>
         d3.csv("average_product_price_per_home_state.csv").then(data => {
             console.log(data);
@@ -25,7 +29,7 @@
             height = 700 - margin.top - margin.bottom;
 
         // append the svg object to the body of the page
-        const svg = d3.select("#my_dataviz")
+        const svg = d3.select("#bargraph")
         .append("svg")
             .attr("width", width + margin.left + margin.right)
             .attr("height", height + margin.top + margin.bottom)
@@ -62,6 +66,184 @@
             .attr("fill", "#69b3a2")
 
         })
+    </script>
+
+    <script>
+
+        // Script for the jittered boxplot
+        d3.csv("data_by_user_alcohol_use.csv").then(function(data) {
+            console.log("Loaded data for boxplot:", data);
+
+            data.forEach(d => {
+                d.total_spend = +d.total_spend;
+            });
+
+            const margin2 = {top: 20, right: 30, bottom: 40, left: 40},
+                  width2 = 1200 - margin2.left - margin2.right,
+                  height2 = 600 - margin2.top - margin2.bottom;
+
+            const svg2 = d3.select("#boxplots_alcohol").append("svg")
+                .attr("width", width2 + margin2.left + margin2.right)
+                .attr("height", height2 + margin2.top + margin2.bottom)
+              .append("g")
+                .attr("transform", "translate(" + margin2.left + "," + margin2.top + ")");
+
+            const x = d3.scaleBand()
+                .domain(data.map(d => d.reported_alcohol_use))
+                .range([0, width2])
+                .padding(0.1);
+
+            const y = d3.scaleLinear()
+                .domain([0, d3.max(data, d => d.total_spend)]).nice()
+                .range([height2, 0]);
+
+            svg2.append("g")
+                .attr("transform", "translate(0," + height2 + ")")
+                .call(d3.axisBottom(x));
+
+            svg2.append("g")
+                .call(d3.axisLeft(y));
+
+            const categories = d3.groups(data, d => d.reported_alcohol_use);
+
+            const boxWidth = x.bandwidth() * 0.6;
+
+            categories.forEach(([key, values]) => {
+                console.log(`Processing category: ${key}`);
+
+                const q1 = d3.quantile(values, 0.25, d => d.total_spend);
+                const median = d3.median(values, d => d.total_spend);
+                const q3 = d3.quantile(values, 0.75, d => d.total_spend);
+                const interQuantileRange = q3 - q1;
+                const min = Math.max(d3.min(values, d => d.total_spend), q1 - 1.5 * interQuantileRange);
+                const max = Math.min(d3.max(values, d => d.total_spend), q3 + 1.5 * interQuantileRange);
+
+                console.log(`Q1: ${q1}, Median: ${median}, Q3: ${q3}, Min: ${min}, Max: ${max}`);
+
+                svg2.append("line")
+                    .attr("x1", x(key) + x.bandwidth() / 2)
+                    .attr("x2", x(key) + x.bandwidth() / 2)
+                    .attr("y1", y(min))
+                    .attr("y2", y(max))
+                    .attr("stroke", "black");
+
+                svg2.append("rect")
+                    .attr("x", x(key) + (x.bandwidth() - boxWidth) / 2)
+                    .attr("y", y(q3))
+                    .attr("width", boxWidth)
+                    .attr("height", y(q1) - y(q3))
+                    .attr("stroke", "black")
+                    .attr("fill", "#69b3a2");
+
+                svg2.append("line")
+                    .attr("x1", x(key) + (x.bandwidth() - boxWidth) / 2)
+                    .attr("x2", x(key) + (x.bandwidth() + boxWidth) / 2)
+                    .attr("y1", y(median))
+                    .attr("y2", y(median))
+                    .attr("stroke", "black");
+            });
+
+            const jitterWidth = x.bandwidth() * 0.2;
+
+            svg2.selectAll("dot")
+                .data(data)
+                .enter()
+                .append("circle")
+                    .attr("cx", d => x(d.reported_alcohol_use) + x.bandwidth() / 2 - jitterWidth / 2 + Math.random() * jitterWidth)
+                    .attr("cy", d => y(d.total_spend))
+                    .attr("r", 3)
+                    .attr("fill", "red")
+                    .attr("opacity", 0.6);
+        });
+    </script>
+
+    <script>
+
+        // Script for the jittered boxplot
+        d3.csv("data_by_user_marijuana_use.csv").then(function(data) {
+            console.log("Loaded data for boxplot:", data);
+
+            data.forEach(d => {
+                d.total_spend = +d.total_spend;
+            });
+
+            const margin2 = {top: 20, right: 30, bottom: 40, left: 40},
+                width2 = 1200 - margin2.left - margin2.right,
+                height2 = 600 - margin2.top - margin2.bottom;
+
+            const svg2 = d3.select("#boxplots_marijuana").append("svg")
+                .attr("width", width2 + margin2.left + margin2.right)
+                .attr("height", height2 + margin2.top + margin2.bottom)
+            .append("g")
+                .attr("transform", "translate(" + margin2.left + "," + margin2.top + ")");
+
+            const x = d3.scaleBand()
+                .domain(data.map(d => d.reported_marijuana_use))
+                .range([0, width2])
+                .padding(0.1);
+
+            const y = d3.scaleLinear()
+                .domain([0, d3.max(data, d => d.total_spend)]).nice()
+                .range([height2, 0]);
+
+            svg2.append("g")
+                .attr("transform", "translate(0," + height2 + ")")
+                .call(d3.axisBottom(x));
+
+            svg2.append("g")
+                .call(d3.axisLeft(y));
+
+            const categories = d3.groups(data, d => d.reported_marijuana_use);
+
+            const boxWidth = x.bandwidth() * 0.6;
+
+            categories.forEach(([key, values]) => {
+                console.log(`Processing category: ${key}`);
+
+                const q1 = d3.quantile(values, 0.25, d => d.total_spend);
+                const median = d3.median(values, d => d.total_spend);
+                const q3 = d3.quantile(values, 0.75, d => d.total_spend);
+                const interQuantileRange = q3 - q1;
+                const min = Math.max(d3.min(values, d => d.total_spend), q1 - 1.5 * interQuantileRange);
+                const max = Math.min(d3.max(values, d => d.total_spend), q3 + 1.5 * interQuantileRange);
+
+                console.log(`Q1: ${q1}, Median: ${median}, Q3: ${q3}, Min: ${min}, Max: ${max}`);
+
+                svg2.append("line")
+                    .attr("x1", x(key) + x.bandwidth() / 2)
+                    .attr("x2", x(key) + x.bandwidth() / 2)
+                    .attr("y1", y(min))
+                    .attr("y2", y(max))
+                    .attr("stroke", "black");
+
+                svg2.append("rect")
+                    .attr("x", x(key) + (x.bandwidth() - boxWidth) / 2)
+                    .attr("y", y(q3))
+                    .attr("width", boxWidth)
+                    .attr("height", y(q1) - y(q3))
+                    .attr("stroke", "black")
+                    .attr("fill", "#69b3a2");
+
+                svg2.append("line")
+                    .attr("x1", x(key) + (x.bandwidth() - boxWidth) / 2)
+                    .attr("x2", x(key) + (x.bandwidth() + boxWidth) / 2)
+                    .attr("y1", y(median))
+                    .attr("y2", y(median))
+                    .attr("stroke", "black");
+            });
+
+            const jitterWidth = x.bandwidth() * 0.2;
+
+            svg2.selectAll("dot")
+                .data(data)
+                .enter()
+                .append("circle")
+                    .attr("cx", d => x(d.reported_marijuana_use) + x.bandwidth() / 2 - jitterWidth / 2 + Math.random() * jitterWidth)
+                    .attr("cy", d => y(d.total_spend))
+                    .attr("r", 3)
+                    .attr("fill", "red")
+                    .attr("opacity", 0.6);
+            });
     </script>
 </body>
 </html>
