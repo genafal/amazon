@@ -13,12 +13,16 @@
     <script>
         d3.csv("average_product_price_per_home_state.csv").then(data => {
             console.log(data);
+
             let span = d3.select("span.rowcount");
             span.text(data.length);
 
-            const margin = {top: 20, right: 30, bottom: 40, left: 90},
+            // Sort data by mean_price in descending order
+            data.sort((a, b) => b.mean_price - a.mean_price);
+
+            const margin = {top: 20, right: 30, bottom: 40, left: 200},
             width = 460 - margin.left - margin.right,
-            height = 400 - margin.top - margin.bottom;
+            height = 700 - margin.top - margin.bottom;
 
         // append the svg object to the body of the page
         const svg = d3.select("#my_dataviz")
@@ -27,13 +31,10 @@
             .attr("height", height + margin.top + margin.bottom)
         .append("g")
             .attr("transform", `translate(${margin.left}, ${margin.top})`);
-
-        // Parse the Data
-        // d3.csv("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/7_OneCatOneNum_header.csv").then( function(data) {
-
+        
         // Add X axis
         const x = d3.scaleLinear()
-            .domain([0, 50]) //extent of our data we are trying to visualize [0, max]
+            .domain([0, 40]) //extent of our data we are trying to visualize [0, max]
             .range([ 0, width]);
         svg.append("g")
             .attr("transform", `translate(0, ${height})`)
