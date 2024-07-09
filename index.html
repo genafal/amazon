@@ -5,6 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Amazon Stuff</title>
     <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <style>
+        .tooltip {
+            position: absolute;
+            text-align: center;
+            width: auto;
+            height: auto;
+            padding: 8px;
+            font: 12px sans-serif;
+            background: lightsteelblue;
+            border: 0px;
+            border-radius: 8px;
+            pointer-events: none;
+        }
+    </style>
 </head>
 <body>
     <h2>Average Product Price Per Home State</h2>
@@ -55,22 +69,40 @@
         svg.append("g")
             .call(d3.axisLeft(y))
 
-        //Bars
+        // Add Tooltip
+        const tooltip = d3.select("body").append("div")
+            .attr("class", "tooltip")
+            .style("opacity", 0);
+
+        // Bars
         svg.selectAll("myRect")
             .data(data)
             .join("rect")
-            .attr("x", x(0) )
+            .attr("x", x(0))
             .attr("y", d => y(d.state)) // use the column for categories (state)
             .attr("width", d => x(d.mean_price)) // use column with the data your displaying
             .attr("height", y.bandwidth())
-            .attr("fill", "#69b3a2")
+            .attr("fill", "lightgrey")
+            .on("mouseover", function(event, d) {
+                tooltip.transition()
+                    .duration(200)
+                    .style("opacity", .9);
+                tooltip.html(`Mean Price in ${d.state}: $${Number(d.mean_price).toFixed(2)}`) // Include state and format mean_price to 2 decimal places
+                    .style("left", (event.pageX + 5) + "px")
+                    .style("top", (event.pageY - 28) + "px");
+            })
+            .on("mouseout", function(d) {
+                tooltip.transition()
+                    .duration(500)
+                    .style("opacity", 0);
+            });
 
         })
     </script>
 
     <script>
 
-        // Script for the jittered boxplot
+        // Script for the alcohol use jittered boxplot
         d3.csv("data_by_user_alcohol_use.csv").then(function(data) {
             console.log("Loaded data for boxplot:", data);
 
@@ -133,7 +165,7 @@
                     .attr("width", boxWidth)
                     .attr("height", y(q1) - y(q3))
                     .attr("stroke", "black")
-                    .attr("fill", "#69b3a2");
+                    .attr("fill", "lightgrey");
 
                 svg2.append("line")
                     .attr("x1", x(key) + (x.bandwidth() - boxWidth) / 2)
@@ -143,7 +175,7 @@
                     .attr("stroke", "black");
             });
 
-            const jitterWidth = x.bandwidth() * 0.2;
+            const jitterWidth = x.bandwidth() * 0.4;
 
             svg2.selectAll("dot")
                 .data(data)
@@ -152,14 +184,16 @@
                     .attr("cx", d => x(d.reported_alcohol_use) + x.bandwidth() / 2 - jitterWidth / 2 + Math.random() * jitterWidth)
                     .attr("cy", d => y(d.total_spend))
                     .attr("r", 3)
-                    .attr("fill", "red")
-                    .attr("opacity", 0.6);
+                    .attr("fill", "orange")
+                    .attr("opacity", 0.3)
+                    .attr("stroke", "black")  // Add stroke color
+                    .attr("stroke-width", 1);  // Add stroke width
         });
     </script>
 
     <script>
 
-        // Script for the jittered boxplot
+        // Script for the marijuana use jittered boxplot
         d3.csv("data_by_user_marijuana_use.csv").then(function(data) {
             console.log("Loaded data for boxplot:", data);
 
@@ -222,7 +256,7 @@
                     .attr("width", boxWidth)
                     .attr("height", y(q1) - y(q3))
                     .attr("stroke", "black")
-                    .attr("fill", "#69b3a2");
+                    .attr("fill", "lightgrey");
 
                 svg2.append("line")
                     .attr("x1", x(key) + (x.bandwidth() - boxWidth) / 2)
@@ -232,7 +266,7 @@
                     .attr("stroke", "black");
             });
 
-            const jitterWidth = x.bandwidth() * 0.2;
+            const jitterWidth = x.bandwidth() * 0.4;
 
             svg2.selectAll("dot")
                 .data(data)
@@ -241,8 +275,10 @@
                     .attr("cx", d => x(d.reported_marijuana_use) + x.bandwidth() / 2 - jitterWidth / 2 + Math.random() * jitterWidth)
                     .attr("cy", d => y(d.total_spend))
                     .attr("r", 3)
-                    .attr("fill", "red")
-                    .attr("opacity", 0.6);
+                    .attr("fill", "teal")
+                    .attr("opacity", 0.3)
+                    .attr("stroke", "black")  // Add stroke color
+                    .attr("stroke-width", 1);  // Add stroke width
             });
     </script>
 </body>
