@@ -51,6 +51,16 @@
             // Sort data by mean_price in descending order
             data.sort((a, b) => b.mean_price - a.mean_price);
 
+            // sometimes we want to ensure the integrity of our original data
+            // since sort mutates the original array, 
+            // we can slice it first to create a copy
+            // let sortedData = data.slice().sort((a,b) => b.mean_price - a.mean_price)
+
+            // slice creates what's known as a shallow copy, and sometimes
+            // like when we have arrays of objects we want a deep copy
+            // there's a function for that
+            // let sortedDataDeep = structuredClone(data).sort((a,b)=>b.mean_price-a.mean_price)
+
             const margin = {top: 20, right: 30, bottom: 40, left: 200},
             width = 460 - margin.left - margin.right,
             height = 700 - margin.top - margin.bottom;
@@ -65,8 +75,15 @@
         
         // Add X axis
         const x = d3.scaleLinear()
+        // alternate method of getting the domain of x, using the d3.max method
+        // allows your code to be adaptable to changing datasets
+        // .domain([0, d3.max(data.map(m => m.mean_price))])
             .domain([0, 40]) //extent of our data we are trying to visualize [0, max]
             .range([ 0, width]);
+        // .nice();
+        // when setting extent dynamically based on data, sometimes good to use .nice method
+        // can enforce the end of the scale has a tick, but ymmv
+
         svg.append("g")
             .attr("transform", `translate(0, ${height})`)
             .call(d3.axisBottom(x))
@@ -88,6 +105,19 @@
             .style("opacity", 0);
 
         // Bars
+        // sometimes we want to set up our d3 selection such that we can access it again
+        // for instance if we want the user to be able to interact and make changes
+        // like filtering or even changing the variables displayed or the entire dataset
+        // let bars = svg.selectAll(".rect")
+        //  .data(sortedDataDeep)
+        //  .join("rect")
+        //  .classed("rect", true)
+
+        // the first time this code runs there are no elements on the page that have 
+        // class rect, but when we join the rectangles we can then class them
+        // now we have two ways to access those rectangles as a group later on
+        // both the bars variable, and by doing another selectAll for class rect
+
         svg.selectAll("myRect")
             .data(data)
             .join("rect")
@@ -100,6 +130,9 @@
                 tooltip.transition()
                     .duration(200)
                     .style("opacity", .9);
+
+                // alternative number formatting using d3.format
+                //  `Mean Price in ${d.state}: d3.format("$.2")(d.mean_price)}`
                 tooltip.html(`Mean Price in ${d.state}: $${Number(d.mean_price).toFixed(2)}`) // Include state and format mean_price to 2 decimal places
                     .style("left", (event.pageX + 5) + "px")
                     .style("top", (event.pageY - 28) + "px");
