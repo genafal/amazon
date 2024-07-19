@@ -40,6 +40,12 @@
 
     <h2>Average Monthly Spend by Gender</h2>
     <div id="timeseries_gender_monthlyspend"></div>
+
+    <h2>Average Monthly Spend, Female by Age Group</h2>
+    <div id="timeseries_female_monthlyspend_by_agegroup"></div>
+
+    <h2>Average Monthly Spend, Male by Age Group</h2>
+    <div id="timeseries_male_monthlyspend_by_agegroup"></div>
     
     <script>
         d3.csv("average_product_price_per_home_state.csv").then(data => {
@@ -412,7 +418,7 @@
 
 <script>
     // Time series for average monthly spend by gender
-    d3.csv("monthly_mean_total_spend_by_gender.csv").then(function(data) {
+    d3.csv("monthly_mean_total_spend_female_by_agegroup.csv").then(function(data) {
         console.log("Loaded data for time series:", data);
 
         // Set up SVG dimensions
@@ -420,7 +426,7 @@
             width = 960 - margin.left - margin.right,
             height = 500 - margin.top - margin.bottom;
 
-        const svg = d3.select("#timeseries_gender_monthlyspend")
+        const svg = d3.select("#timeseries_female_monthlyspend_by_agegroup")
                     .append("svg")
                     .attr("width", width + margin.left + margin.right)
                     .attr("height", height + margin.top + margin.bottom)
@@ -433,7 +439,7 @@
         // Format the data
         data.forEach(d => {
             d.year_month = parseTime(d.year_month);
-            d.monthly_mean_total_spend = +d.monthly_mean_total_spend;
+            d.monthly_mean_total_spend_by_agegroup = +d.monthly_mean_total_spend_by_agegroup;
         });
 
         // Scale the range of the data
@@ -443,14 +449,14 @@
         // Define the line
         const line = d3.line()
                     .x(d => x(d.year_month))
-                    .y(d => y(d.monthly_mean_total_spend));
+                    .y(d => y(d.monthly_mean_total_spend_by_agegroup));
 
         // Nest the entries by gender
-        const dataNest = d3.groups(data, d => d.gender);
+        const dataNest = d3.groups(data, d => d.age);
 
         // Set the domains of the axes
         x.domain(d3.extent(data, d => d.year_month));
-        y.domain([0, d3.max(data, d => d.monthly_mean_total_spend)]);
+        y.domain([0, d3.max(data, d => d.monthly_mean_total_spend_by_agegroup)]);
 
         // Add the X Axis
         svg.append("g")
@@ -461,7 +467,7 @@
         svg.append("g")
             .call(d3.axisLeft(y));
 
-        // Add the lines for each gender
+        // Add the lines for each age group
         dataNest.forEach((d, i) => {
             svg.append("path")
                 .data([d[1]])
@@ -482,6 +488,88 @@
             .attr("width", 18)
             .attr("height", 18)
             .style("fill", (d, i) => d3.schemePaired[i]);
+
+        legend.append("text")
+            .attr("x", width - 24)
+            .attr("y", 9)
+            .attr("dy", ".35em")
+            .style("text-anchor", "end")
+            .text(d => d[0]);
+    });
+</script>
+
+<script>
+    // Time series for average monthly spend, male by age group
+    d3.csv("monthly_mean_total_spend_male_by_agegroup.csv").then(function(data) {
+        console.log("Loaded data for time series:", data);
+
+        // Set up SVG dimensions
+        const margin = { top: 20, right: 20, bottom: 30, left: 50 },
+            width = 960 - margin.left - margin.right,
+            height = 500 - margin.top - margin.bottom;
+
+        const svg = d3.select("#timeseries_male_monthlyspend_by_agegroup")
+                    .append("svg")
+                    .attr("width", width + margin.left + margin.right)
+                    .attr("height", height + margin.top + margin.bottom)
+                    .append("g")
+                    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        // Parse the date / time
+        const parseTime = d3.timeParse("%Y-%m-%d");
+
+        // Format the data
+        data.forEach(d => {
+            d.year_month = parseTime(d.year_month);
+            d.monthly_mean_total_spend_by_agegroup = +d.monthly_mean_total_spend_by_agegroup;
+        });
+
+        // Scale the range of the data
+        const x = d3.scaleTime().range([0, width]);
+        const y = d3.scaleLinear().range([height, 0]);
+
+        // Define the line
+        const line = d3.line()
+                    .x(d => x(d.year_month))
+                    .y(d => y(d.monthly_mean_total_spend_by_agegroup));
+
+        // Nest the entries by gender
+        const dataNest = d3.groups(data, d => d.age);
+
+        // Set the domains of the axes
+        x.domain(d3.extent(data, d => d.year_month));
+        y.domain([0, d3.max(data, d => d.monthly_mean_total_spend_by_agegroup)]);
+
+        // Add the X Axis
+        svg.append("g")
+            .attr("transform", "translate(0," + height + ")")
+            .call(d3.axisBottom(x));
+
+        // Add the Y Axis
+        svg.append("g")
+            .call(d3.axisLeft(y));
+
+        // Add the lines for each gender
+        dataNest.forEach((d, i) => {
+            svg.append("path")
+                .data([d[1]])
+                .attr("class", "line")
+                .attr("d", line)
+                .style("stroke", d3.schemeSet3[i]);
+        });
+
+        // Add a legend
+        const legend = svg.selectAll(".legend")
+                        .data(dataNest)
+                        .enter().append("g")
+                        .attr("class", "legend")
+                        .attr("transform", (d, i) => "translate(0," + i * 20 + ")");
+
+        legend.append("rect")
+            .attr("x", width - 18)
+            .attr("width", 18)
+            .attr("height", 18)
+            .style("fill", (d, i) => d3.schemeSet3[i]);
 
         legend.append("text")
             .attr("x", width - 24)
