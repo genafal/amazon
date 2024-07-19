@@ -34,6 +34,10 @@
     </div>
     <div id="timeseries_monthlyspend_by_agegroup"></div>
     <script>
+        // the dimensions, the svg and the legend box won't change, 
+        // so go ahead and create them first, as constants so you
+        // grab them later whenever you need wherever in the code.
+
         // Set up SVG dimensions
         const margin = { top: 20, right: 20, bottom: 30, left: 50 },
             width = 960 - margin.left - margin.right,
@@ -48,12 +52,22 @@
         const legend = svg.append("g")
             .classed("legend", true)
             .attr("transform", `translate(${width-100}, 0)`);
-        svg.append("g").classed("xAxis", true);
+        svg.append("g").classed("xAxis", true)
+            .attr("transform", "translate(0," + height + ")");
         svg.append("g").classed("yAxis", true);
 
+        // create an initialization function that consumes the correct dataset
         function init(data) {
+
+            // this also never changes, and could be moved up in scope, 
+            // works either way though
+
             // Parse the date / time
             const parseTime = d3.timeParse("%Y-%m-%d");
+
+            // I moved this into making a copy of the data, because it was behaving strangely
+            // when mutating the original data. 
+
             // Format the data
             const formattedData = data.map(d => {
                 return (
@@ -64,15 +78,19 @@
                     }                    
                 )                
             })
+
             // Nest the entries by gender
             const dataNest = d3.groups(formattedData, d => d.age);
 
+            // Create x and y scales
             const x = d3.scaleTime().range([0, width])
-                .domain(d3.extent(formattedData, d => d.year_month));
+                .domain(d3.extent(formattedData, d => d.year_month))
+                .nice();
             const y = d3.scaleLinear().range([height, 0])
-                .domain([0, d3.max(formattedData, d => d.monthly_mean_total_spend_by_agegroup)]);
+                .domain([0, d3.max(formattedData, d => d.monthly_mean_total_spend_by_agegroup)])
+                .nice();
 
-            // Define the line
+            // Define the line generator function
             const line = d3.line()
                 .x(d => x(d.year_month))
                 .y(d => y(d.monthly_mean_total_spend_by_agegroup));
@@ -80,13 +98,19 @@
             const color = d3.scaleOrdinal()
                 .domain(dataNest.map(d => d[0])).range(d3.schemeSet3)
 
-            // Add the X Axis
+            // Grab the xAxis group element and call the axisBottom function
+            // to reset the axis when the data changes
+            // added a transition here to call attention to the changes in the 
+            // extent of the axes for the change in data
             svg.select("g.xAxis")
-                .attr("transform", "translate(0," + height + ")")
+                .transition()
+                .duration(300)
                 .call(d3.axisBottom(x));
     
-            // Add the Y Axis
+            // Same with the yAxis as the xAxis
             svg.select("g.yAxis")
+                .transition()
+                .duration(300)
                 .call(d3.axisLeft(y));
     
             // Add the lines for each gender
@@ -98,6 +122,10 @@
                 .style("stroke", d => color(d[0]));
     
             // Reset the legend
+            // this works best if you clean out the legend group element and just rebuild it
+            // the remove method is handy for that. 
+            // in this case, the legend doesn't change, but depending on the data
+            // and the thing the interactivity is changing, it might, so we rebuild it just in case
             legend.selectAll(".legendEntry").remove();
 
             let legendEntries = legend.selectAll(".legendEntry")
@@ -117,11 +145,10 @@
                 .attr("x", 24)
                 .attr("y", 9)
                 .attr("dy", ".35em")
-                // .style("text-anchor", "end")
                 .text(d => d[0]);
         }
 
-        // Time series for average monthly spend, male by age group
+        // Time series for average monthly spend, by age group
         Promise.all([d3.csv("monthly_mean_total_spend_male_by_agegroup.csv"), d3.csv("monthly_mean_total_spend_female_by_agegroup.csv")])
         .then(([maleData, femaleData]) => {
             console.log("Loaded data for time series:", femaleData);
