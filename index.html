@@ -35,8 +35,11 @@
     <h2>Total Spend 2018-2022 by Reported Marijuana Use</h2>
     <div id="boxplots_marijuana"></div>
 
+    <h2>Average Monthly Item Price by Gender</h2>
+    <div id="timeseries_gender_averageitemprice"></div>
+
     <h2>Average Monthly Spend by Gender</h2>
-    <div id="timeseries_gender"></div>
+    <div id="timeseries_gender_monthlyspend"></div>
     
     <script>
         d3.csv("average_product_price_per_home_state.csv").then(data => {
@@ -293,7 +296,7 @@
     </script>
 
     <script>
-        // Time series for monthly spend by gender
+        // Time series for average item price by gender
         d3.csv("monthly_spend_by_gender.csv").then(function(data) {
             console.log("Loaded data for time series:", data);
 
@@ -302,7 +305,7 @@
                 width = 960 - margin.left - margin.right,
                 height = 500 - margin.top - margin.bottom;
 
-            const svg = d3.select("#timeseries_gender")
+            const svg = d3.select("#timeseries_gender_averageitemprice")
                         .append("svg")
                         .attr("width", width + margin.left + margin.right)
                         .attr("height", height + margin.top + margin.bottom)
@@ -349,7 +352,7 @@
                     .data([d[1]])
                     .attr("class", "line")
                     .attr("d", line)
-                    .style("stroke", d3.schemeCategory10[i]);
+                    .style("stroke", d3.schemePaired[i]);
             });
 
             // Add a legend
@@ -363,7 +366,7 @@
                 .attr("x", width - 18)
                 .attr("width", 18)
                 .attr("height", 18)
-                .style("fill", (d, i) => d3.schemeCategory10[i]);
+                .style("fill", (d, i) => d3.schemePaired[i]);
 
             legend.append("text")
                 .attr("x", width - 24)
@@ -373,5 +376,89 @@
                 .text(d => d[0]);
         });
 </script>
+
+<script>
+    // Time series for average monthly spend by gender
+    d3.csv("monthly_spend_by_gender.csv").then(function(data) {
+        console.log("Loaded data for time series:", data);
+
+        // Set up SVG dimensions
+        const margin = { top: 20, right: 20, bottom: 30, left: 50 },
+            width = 960 - margin.left - margin.right,
+            height = 500 - margin.top - margin.bottom;
+
+        const svg = d3.select("#timeseries_gender_monthlyspend")
+                    .append("svg")
+                    .attr("width", width + margin.left + margin.right)
+                    .attr("height", height + margin.top + margin.bottom)
+                    .append("g")
+                    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        // Parse the date / time
+        const parseTime = d3.timeParse("%Y-%m-%d");
+
+        // Format the data
+        data.forEach(d => {
+            d.year_month = parseTime(d.year_month);
+            d.monthly_spend = +d.monthly_spend;
+        });
+
+        // Scale the range of the data
+        const x = d3.scaleTime().range([0, width]);
+        const y = d3.scaleLinear().range([height, 0]);
+
+        // Define the line
+        const line = d3.line()
+                    .x(d => x(d.year_month))
+                    .y(d => y(d.monthly_spend));
+
+        // Nest the entries by gender
+        const dataNest = d3.groups(data, d => d.gender);
+
+        // Set the domains of the axes
+        x.domain(d3.extent(data, d => d.year_month));
+        y.domain([0, d3.max(data, d => d.monthly_spend)]);
+
+        // Add the X Axis
+        svg.append("g")
+            .attr("transform", "translate(0," + height + ")")
+            .call(d3.axisBottom(x));
+
+        // Add the Y Axis
+        svg.append("g")
+            .call(d3.axisLeft(y));
+
+        // Add the lines for each gender
+        dataNest.forEach((d, i) => {
+            svg.append("path")
+                .data([d[1]])
+                .attr("class", "line")
+                .attr("d", line)
+                .style("stroke", d3.schemePaired[i]);
+        });
+
+        // Add a legend
+        const legend = svg.selectAll(".legend")
+                        .data(dataNest)
+                        .enter().append("g")
+                        .attr("class", "legend")
+                        .attr("transform", (d, i) => "translate(0," + i * 20 + ")");
+
+        legend.append("rect")
+            .attr("x", width - 18)
+            .attr("width", 18)
+            .attr("height", 18)
+            .style("fill", (d, i) => d3.schemePaired[i]);
+
+        legend.append("text")
+            .attr("x", width - 24)
+            .attr("y", 9)
+            .attr("dy", ".35em")
+            .style("text-anchor", "end")
+            .text(d => d[0]);
+    });
+</script>
+
+
 </body>
 </html>
