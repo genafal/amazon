@@ -379,7 +379,7 @@
 
 <script>
     // Time series for average monthly spend by gender
-    d3.csv("monthly_spend_by_gender.csv").then(function(data) {
+    d3.csv("monthly_mean_total_spend_by_gender.csv").then(function(data) {
         console.log("Loaded data for time series:", data);
 
         // Set up SVG dimensions
@@ -400,7 +400,7 @@
         // Format the data
         data.forEach(d => {
             d.year_month = parseTime(d.year_month);
-            d.monthly_spend = +d.monthly_spend;
+            d.monthly_mean_total_spend = +d.monthly_mean_total_spend;
         });
 
         // Scale the range of the data
@@ -410,14 +410,14 @@
         // Define the line
         const line = d3.line()
                     .x(d => x(d.year_month))
-                    .y(d => y(d.monthly_spend));
+                    .y(d => y(d.monthly_mean_total_spend));
 
         // Nest the entries by gender
         const dataNest = d3.groups(data, d => d.gender);
 
         // Set the domains of the axes
         x.domain(d3.extent(data, d => d.year_month));
-        y.domain([0, d3.max(data, d => d.monthly_spend)]);
+        y.domain([0, d3.max(data, d => d.monthly_mean_total_spend)]);
 
         // Add the X Axis
         svg.append("g")
